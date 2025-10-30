@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import accuracy_score, classification_report, mean_squared_error, r2_score
 import joblib
+import os
 
 # -----------------------------
 # 1. Load Dataset
@@ -23,11 +24,15 @@ df = df.dropna()  # ya df.fillna(df.mean())
 X = df[['sr', 'rr', 't', 'lm', 'bo', 'rem', 'sh', 'hr']]
 y = df['sl']
 
-# Check if target is categorical (classification) or numeric (regression)
-if y.dtype == 'object' or len(y.unique()) <= 5:
+# Detect problem type and encode labels if needed
+use_label_encoder = False
+if y.dtype == 'object':
     problem_type = 'classification'
     le = LabelEncoder()
     y = le.fit_transform(y)
+    use_label_encoder = True
+elif len(y.unique()) <= 5:
+    problem_type = 'classification'  # numeric 0,1,2 etc.
 else:
     problem_type = 'regression'
 
@@ -67,9 +72,10 @@ else:
 # -----------------------------
 # 6. Save Model and Scaler
 # -----------------------------
+os.makedirs('../models', exist_ok=True)
 joblib.dump(model, '../models/stress_model.pkl')
 joblib.dump(scaler, '../models/scaler.pkl')
-if problem_type == 'classification':
+if use_label_encoder:
     joblib.dump(le, '../models/label_encoder.pkl')
 
 # -----------------------------
@@ -79,13 +85,12 @@ def predict_stress(new_data):
     """
     new_data: list of 8 features [sr, rr, t, lm, bo, rem, sh, hr]
     """
-    # Load model and scaler
     model = joblib.load('../models/stress_model.pkl')
     scaler = joblib.load('../models/scaler.pkl')
-
     new_scaled = scaler.transform([new_data])
 
-    if problem_type == 'classification':
+    # Load label encoder only if it was used
+    if use_label_encoder:
         le = joblib.load('../models/label_encoder.pkl')
         pred = model.predict(new_scaled)
         return le.inverse_transform(pred)[0]
