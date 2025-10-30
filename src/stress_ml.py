@@ -20,6 +20,10 @@ df = pd.read_csv(data_path)
 # Handle missing values
 df = df.dropna()  # ya df.fillna(df.mean())
 
+#save it to the processed folder
+os.makedirs('../data/processed', exist_ok=True)  # Create the processed folder if it doesn't exist
+df.to_csv('../data/processed/processed_data.csv', index=False)  # Save the preprocessed data
+
 # Features and target
 X = df[['sr', 'rr', 't', 'lm', 'bo', 'rem', 'sh', 'hr']]
 y = df['sl']
